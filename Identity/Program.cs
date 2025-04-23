@@ -1,4 +1,7 @@
-﻿using Identity;
+﻿using System.Globalization;
+using Identity;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -11,21 +14,55 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // Добавляем Serilog
     builder.Host.UseSerilog((ctx, lc) => lc
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
         .Enrich.FromLogContext()
         .ReadFrom.Configuration(ctx.Configuration));
 
-    var app = builder
-        .ConfigureServices()
-        .ConfigurePipeline();
+    // Конфигурация локализации
+    builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
-    // this seeding is only for the template to bootstrap the DB and users.
-    // in production you will likely want a different approach.
+    // Добавляем Razor Pages
+    builder.Services.AddRazorPages()
+        .AddViewLocalization()
+        .AddDataAnnotationsLocalization();
+
+    // Добавляем аутентификацию и авторизацию
+    builder.Services.AddAuthentication("Cookies")
+        .AddCookie("Cookies", options =>
+        {
+            options.LoginPath = "/Account/Login/Index";
+            options.LogoutPath = "/Account/Logout";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+        });
+
+    builder.Services.AddAuthorization();
+
+    var app = builder.Build();
+
+    // Настройка локализации
+    var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("ru") };
+    app.UseRequestLocalization(new RequestLocalizationOptions
+    {
+        DefaultRequestCulture = new RequestCulture("ru"),
+        SupportedCultures = supportedCultures,
+        SupportedUICultures = supportedCultures
+    });
+
+    // Конвейер обработки запросов
+    app.UseRouting();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapRazorPages();
+
+    // Логика заполнения базы данных (при необходимости)
     if (args.Contains("/seed"))
     {
         Log.Information("Seeding database...");
-        
+        // TODO: Добавить логику заполнения базы данных
         Log.Information("Done seeding database. Exiting.");
         return;
     }

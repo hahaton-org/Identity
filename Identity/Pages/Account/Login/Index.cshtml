@@ -1,51 +1,55 @@
-@page
-@model Identity.Pages.Login.Index
+﻿@page
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model Identity.Pages.Account.Login.Index
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer localizer
 
 <div class="login-page">
-    <div class="lead">
-        <h1>Login</h1>
-        <p>Choose how to login</p>
-    </div>
-
     <partial name="_ValidationSummary" />
 
     <div class="row">
-
         @if (Model.View.EnableLocalLogin)
         {
             <div class="col-sm-6">
                 <div class="card">
                     <div class="card-header">
-                        <h2>Local Account</h2>
+                        <h2>@localizer["Локальный вход"]</h2>
                     </div>
 
                     <div class="card-body">
-                        <form asp-page="/Account/Login/Index">
+                        <form method="post">
                             <input type="hidden" asp-for="Input.ReturnUrl" />
 
                             <div class="form-group">
-                                <label asp-for="Input.Username"></label>
-                                <input class="form-control" placeholder="Username" asp-for="Input.Username" autofocus>
+                                <label asp-for="Input.Email">@localizer["Email"]</label>
+                                <input asp-for="Input.Email" type="email" class="form-control" placeholder="@localizer["Введите email"]" autofocus />
+                                <span asp-validation-for="Input.Email" class="text-danger"></span>
                             </div>
+
                             <div class="form-group">
-                                <label asp-for="Input.Password"></label>
-                                <input type="password" class="form-control" placeholder="Password" asp-for="Input.Password" autocomplete="off">
+                                <label asp-for="Input.Password">@localizer["Пароль"]</label>
+                                <input asp-for="Input.Password" type="password" class="form-control" placeholder="@localizer["Введите пароль"]" />
+                                <span asp-validation-for="Input.Password" class="text-danger"></span>
                             </div>
-                            
+
                             @if (Model.View.AllowRememberLogin)
                             {
                                 <div class="form-group">
                                     <div class="form-check">
-                                        <input class="form-check-input" asp-for="Input.RememberLogin">
-                                        <label class="form-check-label" asp-for="Input.RememberLogin">
-                                            Remember My Login
-                                        </label>
+                                        <input asp-for="Input.RememberLogin" class="form-check-input" />
+                                        <label asp-for="Input.RememberLogin" class="form-check-label">@localizer["Запомнить меня"]</label>
                                     </div>
                                 </div>
                             }
-                            
-                            <button class="btn btn-primary" name="Input.Button" value="login">Login</button>
-                            <button class="btn btn-secondary" name="Input.Button" value="cancel">Cancel</button>
+
+                            <div class="form-group">
+                                <a asp-page="../Register/Index" asp-route-returnUrl="@Model.Input.ReturnUrl" class="btn btn-link">
+                                    @localizer["Регистрация нового пользователя"]
+                                </a>
+                                <br />
+                                <button type="submit" class="btn btn-primary" name="Input.Button" value="login">@localizer["Войти"]</button>
+                                <button type="submit" class="btn btn-secondary" name="Input.Button" value="cancel">@localizer["Отмена"]</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -57,7 +61,7 @@
             <div class="col-sm-6">
                 <div class="card">
                     <div class="card-header">
-                        <h2>External Account</h2>
+                        <h2>@localizer["Вход через провайдеров"]</h2>
                     </div>
                     <div class="card-body">
                         <ul class="list-inline">
@@ -81,8 +85,8 @@
         @if (!Model.View.EnableLocalLogin && !Model.View.VisibleExternalProviders.Any())
         {
             <div class="alert alert-warning">
-                <strong>Invalid login request</strong>
-                There are no login schemes configured for this request.
+                <strong>Ошибка входа</strong>
+                Нет доступных схем входа.
             </div>
         }
     </div>
