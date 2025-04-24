@@ -1,6 +1,8 @@
 using Duende.IdentityServer;
+using Duende.IdentityServer.Services;
 using Identity.Data;
 using Identity.Models;
+using IdentityServer.Infrastructure; // Пространство имен с вашими кастомными классами
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -20,6 +22,13 @@ namespace Identity
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+            // Исправление проблемы с ClaimsPrincipalFactory
+            // Убедитесь, что ваш класс ClaimsPrincipalFactory правильно наследуется от UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>
+            builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ClaimsPrincipalFactory>();
+
+            // Исправление проблемы с ProfileService
+            builder.Services.AddScoped<IProfileService, ProfileService>();
+
             builder.Services
                 .AddIdentityServer(options =>
                 {
@@ -28,7 +37,7 @@ namespace Identity
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseSuccessEvents = true;
 
-                    // see https://docs.duendesoftware.com/identityserver/v6/fundamentals/resources/
+                    // Подробнее: https://docs.duendesoftware.com/identityserver/v6/fundamentals/resources/
                     options.EmitStaticAudienceClaim = true;
                 })
                 .AddInMemoryIdentityResources(Config.IdentityResources)
@@ -40,10 +49,7 @@ namespace Identity
                 .AddGoogle(options =>
                 {
                     options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
-
-                    // register your IdentityServer with Google at https://console.developers.google.com
-                    // enable the Google+ API
-                    // set the redirect URI to https://localhost:5001/signin-google
+                    // Укажите действительные данные от Google:
                     options.ClientId = "copy client ID from Google here";
                     options.ClientSecret = "copy client secret from Google here";
                 });

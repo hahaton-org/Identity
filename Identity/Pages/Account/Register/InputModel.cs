@@ -19,5 +19,6 @@ namespace Identity.Pages.Account.Register
         public string ConfirmPassword { get; set; }
 
         public string ReturnUrl { get; set; }
+      
     }
 }

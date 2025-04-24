@@ -15,7 +15,7 @@ namespace Identity
             new ApiScope[]
             {
                 new ApiScope("scope1"),
-                new ApiScope("scope2"),
+       
             };
 
         public static IEnumerable<Client> Clients =>
@@ -37,7 +37,7 @@ namespace Identity
                 new Client
                 {
                     ClientId = "interactive",
-                    ClientSecrets = { new Secret("49C1A7E1-0C79-4A89-A3D6-A37998FB86B0".Sha256()) },
+                    RequireClientSecret = false,
 
                     AllowedGrantTypes = GrantTypes.Code,
 
@@ -46,7 +46,7 @@ namespace Identity
                     PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
 
                     AllowOfflineAccess = true,
-                    AllowedScopes = { "openid", "profile", "scope2" }
+                    AllowedScopes = { "openid", "profile", "scope1" }
                 },
             };
     }
