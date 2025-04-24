@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-
-namespace Identity.Pages.Account.Register;
-
-public class ViewModel
+﻿namespace Identity.Pages.Account.Register
 {
-    public List<SelectListItem> RolesList { get; set; }
+    public class ViewModel
+    {
+        public string SuccessMessage { get; set; }
+        public string ErrorMessage { get; set; }
+    }
 }

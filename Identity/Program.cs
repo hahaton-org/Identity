@@ -1,80 +1,63 @@
-﻿using System.Globalization;
-using Identity;
-using Microsoft.AspNetCore.Localization;
-using Microsoft.Extensions.Options;
-using Serilog;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Identity.Data; // Пространство, где определён ApplicationDbContext
 
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateBootstrapLogger();
+var builder = WebApplication.CreateBuilder(args);
 
-Log.Information("Starting up");
+// Регистрируем контекст базы данных с использованием In‑Memory базы для демонстрации.
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseInMemoryDatabase("TestDb"));
 
-try
+// Регистрируем ASP.NET Core Identity.
+// Здесь используется стандартный тип IdentityUser и IdentityRole.
+// Если нужно использовать IdentityUser<Guid>, можно заменить типы и соответственно настроить ApplicationDbContext.
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
-    var builder = WebApplication.CreateBuilder(args);
+    // Настраиваем параметры пароля (для демонстрации ослабим требования)
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
-    // Добавляем Serilog
-    builder.Host.UseSerilog((ctx, lc) => lc
-        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
-        .Enrich.FromLogContext()
-        .ReadFrom.Configuration(ctx.Configuration));
+// Добавляем поддержку Razor Pages.
+builder.Services.AddRazorPages();
 
-    // Конфигурация локализации
-    builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-
-    // Добавляем Razor Pages
-    builder.Services.AddRazorPages()
-        .AddViewLocalization()
-        .AddDataAnnotationsLocalization();
-
-    // Добавляем аутентификацию и авторизацию
-    builder.Services.AddAuthentication("Cookies")
-        .AddCookie("Cookies", options =>
-        {
-            options.LoginPath = "/Account/Login/Index";
-            options.LogoutPath = "/Account/Logout";
-            options.AccessDeniedPath = "/Account/AccessDenied";
-        });
-
-    builder.Services.AddAuthorization();
-
-    var app = builder.Build();
-
-    // Настройка локализации
-    var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("ru") };
-    app.UseRequestLocalization(new RequestLocalizationOptions
-    {
-        DefaultRequestCulture = new RequestCulture("ru"),
-        SupportedCultures = supportedCultures,
-        SupportedUICultures = supportedCultures
-    });
-
-    // Конвейер обработки запросов
-    app.UseRouting();
-
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    app.MapRazorPages();
-
-    // Логика заполнения базы данных (при необходимости)
-    if (args.Contains("/seed"))
-    {
-        Log.Information("Seeding database...");
-        // TODO: Добавить логику заполнения базы данных
-        Log.Information("Done seeding database. Exiting.");
-        return;
-    }
-
-    app.Run();
-}
-catch (Exception ex) when (ex is not HostAbortedException)
+// Настраиваем обработку cookie-аутентификации (страница входа)
+builder.Services.ConfigureApplicationCookie(options =>
 {
-    Log.Fatal(ex, "Unhandled exception");
-}
-finally
+    options.LoginPath = "/Account/Login/Index"; // Путь к странице входа
+});
+
+var app = builder.Build();
+
+// Конфигурация middleware
+
+// Для разработки выводим детальную информацию об ошибках
+if (app.Environment.IsDevelopment())
 {
-    Log.Information("Shut down complete");
-    Log.CloseAndFlush();
+    app.UseDeveloperExceptionPage();
 }
+else
+{
+    // В продуктиве можно использовать собственную страницу обработки ошибок и HSTS
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+// Включаем аутентификацию и авторизацию
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Роутинг для Razor Pages. Страница входа должна располагаться по адресу /Account/Login/Index.
+app.MapRazorPages();
+
+app.Run();
